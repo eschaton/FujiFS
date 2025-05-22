@@ -278,7 +278,7 @@
 
 #if FUJI_ROMBUILD
 #define FF_FS_TINY		1
-#endif
+#else
 #define FF_FS_TINY		0
 #endif
 /* This option switches tiny buffer configuration. (0:Normal or 1:Tiny)
@@ -291,6 +291,11 @@
 /* This option switches support for exFAT filesystem. (0:Disable or 1:Enable)
 /  To enable exFAT, also LFN needs to be enabled. (FF_USE_LFN >= 1)
 /  Note that enabling exFAT discards ANSI C (C89) compatibility. */
+
+
+#define FF_FS_FAT12		0
+#define FF_FS_FAT16		0
+#define FF_FS_FAT32		0
 
 
 #if FUJI_ROMBUILD

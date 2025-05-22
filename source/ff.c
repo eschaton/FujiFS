@@ -19,7 +19,14 @@
 /----------------------------------------------------------------------------*/
 
 
+#if FUJI_ROMBUILD
+void *memcpy(void *dst, const void *src, unsigned int s);
+int memcmp(const void *a, const void *b, unsigned int s);
+void *memset(void *dst, int b, unsigned int s);
+char *strchr(const char *s, int c);
+#else
 #include <string.h>
+#endif
 #include "ff.h"			/* Declarations of FatFs API */
 #include "diskio.h"		/* Declarations of device I/O functions */
 
@@ -1191,6 +1198,7 @@ static DWORD get_fat (		/* 0xFFFFFFFF:Disk error, 1:Internal error, 2..0x7FFFFFF
 		val = 0xFFFFFFFF;	/* Default value falls on disk error */
 
 		switch (fs->fs_type) {
+#if FF_FS_FAT12
 		case FS_FAT12 :
 			bc = (UINT)clst; bc += bc / 2;
 			if (move_window(fs, fs->fatbase + (bc / SS(fs))) != FR_OK) break;
@@ -1199,16 +1207,21 @@ static DWORD get_fat (		/* 0xFFFFFFFF:Disk error, 1:Internal error, 2..0x7FFFFFF
 			wc |= fs->win[bc % SS(fs)] << 8;	/* Merge 2nd byte of the entry */
 			val = (clst & 1) ? (wc >> 4) : (wc & 0xFFF);	/* Adjust bit position */
 			break;
+#endif
 
+#if FF_FS_FAT16
 		case FS_FAT16 :
 			if (move_window(fs, fs->fatbase + (clst / (SS(fs) / 2))) != FR_OK) break;
 			val = ld_word(fs->win + clst * 2 % SS(fs));		/* Simple WORD array */
 			break;
+#endif
 
+#if FF_FS_FAT32
 		case FS_FAT32 :
 			if (move_window(fs, fs->fatbase + (clst / (SS(fs) / 4))) != FR_OK) break;
 			val = ld_dword(fs->win + clst * 4 % SS(fs)) & 0x0FFFFFFF;	/* Simple DWORD array but mask out upper 4 bits */
 			break;
+#endif
 #if FF_FS_EXFAT
 		case FS_EXFAT :
 			if ((obj->objsize != 0 && obj->sclust != 0) || obj->stat == 0) {	/* Object except root dir must have valid data length */
@@ -1265,6 +1278,8 @@ static FRESULT put_fat (	/* FR_OK(0):succeeded, !=0:error */
 
 	if (clst >= 2 && clst < fs->n_fatent) {	/* Check if in valid range */
 		switch (fs->fs_type) {
+
+#if FF_FS_FAT12
 		case FS_FAT12:
 			bc = (UINT)clst; bc += bc / 2;	/* bc: byte offset of the entry */
 			res = move_window(fs, fs->fatbase + (bc / SS(fs)));
@@ -1278,15 +1293,20 @@ static FRESULT put_fat (	/* FR_OK(0):succeeded, !=0:error */
 			*p = (clst & 1) ? (BYTE)(val >> 4) : ((*p & 0xF0) | ((BYTE)(val >> 8) & 0x0F));	/* Update 2nd byte */
 			fs->wflag = 1;
 			break;
+#endif
 
+#if FF_FS_FAT16
 		case FS_FAT16:
 			res = move_window(fs, fs->fatbase + (clst / (SS(fs) / 2)));
 			if (res != FR_OK) break;
 			st_word(fs->win + clst * 2 % SS(fs), (WORD)val);	/* Simple WORD array */
 			fs->wflag = 1;
 			break;
+#endif
 
+#if FF_FS_FAT32
 		case FS_FAT32:
+#endif
 #if FF_FS_EXFAT
 		case FS_EXFAT:
 #endif
@@ -4853,6 +4873,7 @@ FRESULT f_getfree (
 			/* Scan FAT to obtain the correct free cluster count */
 			nfree = 0;
 			if (fs->fs_type == FS_FAT12) {	/* FAT12: Scan bit field FAT entries */
+#if FF_FS_FAT12
 				clst = 2; obj.fs = fs;
 				do {
 					stat = get_fat(&obj, clst);
@@ -4864,6 +4885,7 @@ FRESULT f_getfree (
 					}
 					if (stat == 0) nfree++;
 				} while (++clst < fs->n_fatent);
+#endif
 			} else {
 #if FF_FS_EXFAT
 				if (fs->fs_type == FS_EXFAT) {	/* exFAT: Scan allocation bitmap */
@@ -4886,7 +4908,9 @@ FRESULT f_getfree (
 					} while (clst);
 				} else
 #endif
-				{	/* FAT16/32: Scan WORD/DWORD FAT entries */
+				{
+#if FF_FS_FAT16 || FF_FS_FAT32
+					/* FAT16/32: Scan WORD/DWORD FAT entries */
 					clst = fs->n_fatent;	/* Number of entries */
 					sect = fs->fatbase;		/* Top of the FAT */
 					i = 0;					/* Offset in the sector */
@@ -4904,6 +4928,7 @@ FRESULT f_getfree (
 						}
 						i %= SS(fs);
 					} while (--clst);
+#endif
 				}
 			}
 			if (res == FR_OK) {		/* Update parameters if succeeded */
@@ -5853,7 +5878,9 @@ static FRESULT create_partition (
 
 	} else
 #endif
-	{	/* Create partitions in MBR format */
+	{
+#if FF_MBR
+		/* Create partitions in MBR format */
 		sz_drv32 = (DWORD)sz_drv;
 		n_sc = N_SEC_TRACK;				/* Determine drive CHS without any consideration of the drive geometry */
 		for (n_hd = 8; n_hd != 0 && sz_drv32 / n_hd / n_sc > 1024; n_hd *= 2) ;
@@ -5890,6 +5917,7 @@ static FRESULT create_partition (
 
 		st_word(buf + BS_55AA, 0xAA55);		/* MBR signature */
 		if (disk_write(drv, buf, 0, 1) != RES_OK) return FR_DISK_ERR;	/* Write it to the MBR */
+#endif
 	}
 
 	return FR_OK;
@@ -5991,11 +6019,14 @@ FRESULT f_mkfs (
 			fsopt |= 0x80;	/* Partitioning is in GPT */
 		} else
 #endif
-		{	/* Get the partition location from MBR partition table */
+		{
+#if FF_MBR
+			/* Get the partition location from MBR partition table */
 			pte = buf + (MBR_Table + (ipart - 1) * SZ_PTE);
 			if (ipart > 4 || pte[PTE_System] == 0) LEAVE_MKFS(FR_MKFS_ABORTED);	/* No partition? */
 			b_vol = ld_dword(pte + PTE_StLba);		/* Get volume start sector */
 			sz_vol = ld_dword(pte + PTE_SizLba);	/* Get volume size */
+#endif
 		}
 	} else {	/* The volume is associated with a physical drive */
 		if (disk_ioctl(pdrv, GET_SECTOR_COUNT, &sz_vol) != RES_OK) LEAVE_MKFS(FR_DISK_ERR);
@@ -6007,10 +6038,13 @@ FRESULT f_mkfs (
 				b_vol = GPT_ALIGN / ss; sz_vol -= b_vol + GPT_ITEMS * SZ_GPTE / ss + 1;	/* Estimated partition offset and size */
 			} else
 #endif
-			{	/* Partitioning is in MBR */
+			{
+#if FF_MBR
+				/* Partitioning is in MBR */
 				if (sz_vol > N_SEC_TRACK) {
 					b_vol = N_SEC_TRACK; sz_vol -= b_vol;	/* Estimated partition offset and size */
 				}
+#endif
 			}
 		}
 	}
