@@ -8,14 +8,22 @@
 / Function Configurations
 /---------------------------------------------------------------------------*/
 
+#if FUJI_ROMBUILD
+#define FF_FS_READONLY	1
+#else
 #define FF_FS_READONLY	0
+#endif
 /* This option switches read-only configuration. (0:Read/Write or 1:Read-only)
 /  Read-only configuration removes writing API functions, f_write(), f_sync(),
 /  f_unlink(), f_mkdir(), f_chmod(), f_rename(), f_truncate(), f_getfree()
 /  and optional writing functions as well. */
 
 
+#if FUJI_ROMBUILD
+#define FF_FS_MINIMIZE	3
+#else
 #define FF_FS_MINIMIZE	0
+#endif
 /* This option defines minimization level to remove some basic API functions.
 /
 /   0: Basic functions are fully enabled.
@@ -30,36 +38,64 @@
 /  f_findnext(). (0:Disable, 1:Enable 2:Enable with matching altname[] too) */
 
 
+#if FUJI_ROMBUILD
 #define FF_USE_MKFS		0
+#else
+#define FF_USE_MKFS		1
+#endif
 /* This option switches f_mkfs(). (0:Disable or 1:Enable) */
 
 
+#if FUJI_ROMBUILD
 #define FF_USE_FASTSEEK	0
+#else
+#define FF_USE_FASTSEEK	1
+#endif
 /* This option switches fast seek feature. (0:Disable or 1:Enable) */
 
 
+#if FUJI_ROMBUILD
 #define FF_USE_EXPAND	0
+#else
+#define FF_USE_EXPAND	1
+#endif
 /* This option switches f_expand(). (0:Disable or 1:Enable) */
 
 
+#if FUJI_ROMBUILD
 #define FF_USE_CHMOD	0
+#else
+#define FF_USE_CHMOD	1
+#endif
 /* This option switches attribute control API functions, f_chmod() and f_utime().
 /  (0:Disable or 1:Enable) Also FF_FS_READONLY needs to be 0 to enable this option. */
 
 
+#if FUJI_ROMBUILD
 #define FF_USE_LABEL	0
+#else
+#define FF_USE_LABEL	1
+#endif
 /* This option switches volume label API functions, f_getlabel() and f_setlabel().
 /  (0:Disable or 1:Enable) */
 
 
+#if FUJI_ROMBUILD
 #define FF_USE_FORWARD	0
+#else
+#define FF_USE_FORWARD	1
+#endif
 /* This option switches f_forward(). (0:Disable or 1:Enable) */
 
 
+#if FUJI_ROMBUILD
 #define FF_USE_STRFUNC	0
-#define FF_PRINT_LLI	0
-#define FF_PRINT_FLOAT	0
+#else
+#define FF_USE_STRFUNC	1
+#define FF_PRINT_LLI	1
+#define FF_PRINT_FLOAT	1
 #define FF_STRF_ENCODE	3
+#endif
 /* FF_USE_STRFUNC switches the string API functions, f_gets(), f_putc(), f_puts()
 /  and f_printf().
 /
@@ -84,7 +120,11 @@
 / Locale and Namespace Configurations
 /---------------------------------------------------------------------------*/
 
-#define FF_CODE_PAGE	932
+#if FUJI_ROMBUILD
+#define FF_CODE_PAGE	437
+#else
+#define FF_CODE_PAGE	0
+#endif
 /* This option specifies the OEM code page to be used on the target system.
 /  Incorrect code page setting can cause a file open failure.
 /
@@ -113,7 +153,11 @@
 */
 
 
-#define FF_USE_LFN		0
+#if FUJI_ROMBUILD
+#define FF_USE_LFN		1
+#else
+#define FF_USE_LFN		3
+#endif
 #define FF_MAX_LFN		255
 /* The FF_USE_LFN switches the support for LFN (long file name).
 /
@@ -133,7 +177,7 @@
 /  ff_memfree() exemplified in ffsystem.c, need to be added to the project. */
 
 
-#define FF_LFN_UNICODE	0
+#define FF_LFN_UNICODE	2
 /* This option switches the character encoding on the API when LFN is enabled.
 /
 /   0: ANSI/OEM in current CP (TCHAR = char)
@@ -153,7 +197,11 @@
 /  on character encoding. When LFN is not enabled, these options have no effect. */
 
 
+#if FUJI_ROMBUILD
 #define FF_FS_RPATH		0
+#else
+#define FF_FS_RPATH		2
+#endif
 /* This option configures support for relative path.
 /
 /   0: Disable relative path and remove related API functions.
@@ -166,7 +214,11 @@
 / Drive/Volume Configurations
 /---------------------------------------------------------------------------*/
 
+#if FUJI_ROMBUILD
 #define FF_VOLUMES		1
+#else
+#define FF_VOLUMES		10
+#endif
 /* Number of volumes (logical drives) to be used. (1-10) */
 
 
@@ -184,7 +236,7 @@
 */
 
 
-#define FF_MULTI_PARTITION	0
+#define FF_MULTI_PARTITION	1
 /* This option switches support for multiple volumes on the physical drive.
 /  By default (0), each logical drive number is bound to the same physical drive
 /  number and only an FAT volume found on the physical drive will be mounted.
@@ -203,12 +255,12 @@
 /  GET_SECTOR_SIZE command. */
 
 
-#define FF_LBA64		0
+#define FF_LBA64		1
 /* This option switches support for 64-bit LBA. (0:Disable or 1:Enable)
 /  To enable the 64-bit LBA, also exFAT needs to be enabled. (FF_FS_EXFAT == 1) */
 
 
-#define FF_MIN_GPT		0x10000000
+#define FF_MIN_GPT		0
 /* Minimum number of sectors to switch GPT as partitioning format in f_mkfs() and 
 /  f_fdisk(). 2^32 sectors maximum. This option has no effect when FF_LBA64 == 0. */
 
@@ -224,23 +276,34 @@
 / System Configurations
 /---------------------------------------------------------------------------*/
 
+#if FUJI_ROMBUILD
+#define FF_FS_TINY		1
+#endif
 #define FF_FS_TINY		0
+#endif
 /* This option switches tiny buffer configuration. (0:Normal or 1:Tiny)
 /  At the tiny configuration, size of file object (FIL) is shrinked FF_MAX_SS bytes.
 /  Instead of private sector buffer eliminated from the file object, common sector
 /  buffer in the filesystem object (FATFS) is used for the file data transfer. */
 
 
-#define FF_FS_EXFAT		0
+#define FF_FS_EXFAT		1
 /* This option switches support for exFAT filesystem. (0:Disable or 1:Enable)
 /  To enable exFAT, also LFN needs to be enabled. (FF_USE_LFN >= 1)
 /  Note that enabling exFAT discards ANSI C (C89) compatibility. */
 
 
+#if FUJI_ROMBUILD
+#define FF_FS_NORTC		1
+#define FF_NORTC_MON	1
+#define FF_NORTC_MDAY	1
+#define FF_NORTC_YEAR	2025
+#else
 #define FF_FS_NORTC		0
 #define FF_NORTC_MON	11
 #define FF_NORTC_MDAY	1
 #define FF_NORTC_YEAR	2024
+#endif
 /* The option FF_FS_NORTC switches timestamp feature. If the system does not have
 /  an RTC or valid timestamp is not needed, set FF_FS_NORTC = 1 to disable the
 /  timestamp feature. Every object modified by FatFs will have a fixed timestamp
@@ -251,7 +314,11 @@
 /  These options have no effect in read-only configuration (FF_FS_READONLY = 1). */
 
 
+#if FUJI_ROMBUILD
+#define FF_FS_NOFSINFO	1
+#else
 #define FF_FS_NOFSINFO	0
+#endif
 /* If you need to know correct free space on the FAT32 volume, set bit 0 of this
 /  option, and f_getfree() at the first time after volume mount will force
 /  a full FAT scan. Bit 1 controls the use of last allocated cluster number.
@@ -263,7 +330,11 @@
 */
 
 
+#if FUJI_ROMBUILD
 #define FF_FS_LOCK		0
+#else
+#define FF_FS_LOCK		1
+#endif
 /* The option FF_FS_LOCK switches file lock function to control duplicated file open
 /  and illegal operation to open objects. This option must be 0 when FF_FS_READONLY
 /  is 1.
@@ -275,7 +346,11 @@
 /      lock control is independent of re-entrancy. */
 
 
+#if FUJI_ROMBUILD
 #define FF_FS_REENTRANT	0
+#else
+#define FF_FS_REENTRANT	1
+#endif
 #define FF_FS_TIMEOUT	1000
 /* The option FF_FS_REENTRANT switches the re-entrancy (thread safe) of the FatFs
 /  module itself. Note that regardless of this option, file access to different
