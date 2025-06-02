@@ -156,7 +156,7 @@
 #if FUJI_ROMBUILD
 #define FF_USE_LFN		1
 #else
-#define FF_USE_LFN		3
+#define FF_USE_LFN		2
 #endif
 #define FF_MAX_LFN		255
 /* The FF_USE_LFN switches the support for LFN (long file name).
