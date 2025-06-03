@@ -22,13 +22,15 @@ LDFLAGS = --relocatable --sysroot $(FUJI_SDKROOT)
 
 
 OBJECTS = \
-	Objects/FujiGlue.o \
 	Objects/ff.o \
-	Objects/ffunicode.o
+	Objects/ffunicode.o \
+	Objects/FSGlue.o
+
+PUBLIC_HEADERS =
 
 PRIVATE_HEADERS = \
-	source/ff.h \
-	source/ffconf.h
+	source/FSGlue.h
+
 
 all: FujiFS.o
 
@@ -46,7 +48,7 @@ FujiFS.o: $(OBJECTS)
 
 
 install: FujiFS.o
-	mkdir -p $(FUJI_SDKROOT)/usr/local/include
+	mkdir -p $(DSTROOT)$(FUJI_SDKROOT)/usr/local/include
 	cp $(PRIVATE_HEADERS) $(DSTROOT)$(FUJI_SDKROOT)/usr/local/include
 	mkdir -p $(DSTROOT)$(FUJI_SDKROOT)/usr/local/lib
 	cp FujiFS.o $(DSTROOT)$(FUJI_SDKROOT)/usr/local/lib
@@ -54,22 +56,25 @@ install: FujiFS.o
 
 # Individual file dependencies.
 
-Objects/FujiGlue.o:	source/FujiGlue.c
+Objects/FSGlue.o:	source/FSGlue.c
 	@mkdir -p Objects
 	$(CC) $(CFLAGS) -c $< -o $@
 
-source/FujiGlue.c:	source/FujiGlue.h
+source/FSGlue.c:	source/FSGlue.h \
+			source/diskio.h \
+			source/ff.h
 
 Objects/ff.o:		source/ff.c
 	@mkdir -p Objects
 	$(CC) $(CFLAGS) -c $< -o $@
 
 source/ff.c:		source/ff.h \
-			source/ffconf.h
+			source/diskio.h
 
 Objects/ffunicode.o:	source/ffunicode.c
 	@mkdir -p Objects
 	$(CC) $(CFLAGS) -c $< -o $@
 
-source/string.c:	source/ff.h \
-			source/ffconf.h
+source/ffunicode.c:	source/ff.h
+
+source/ff.h:		source/ffconf.h
