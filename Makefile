@@ -15,10 +15,25 @@ CFLAGS_DEBUG_0 = -Os -DNDEBUG=1
 CFLAGS_DEBUG_1 = -O0 -g -DDEBUG=1
 CFLAGS_DEBUG_ = $(CFLAGS_DEBUG_0)
 
-FUJI_SDKROOT = /opt/Fuji/Source/FujiSDK
-FUJI_ABI_FLAGS = -fPIC -fvisibility=hidden -mfloat-abi=hard
-CFLAGS = -Isource $(FUJI_ABI_FLAGS) -isysroot $(FUJI_SDKROOT) $(CFLAGS_DEBUG_$(DEBUG))
-LDFLAGS = --relocatable --sysroot $(FUJI_SDKROOT)
+FUJI_SDKROOT = /opt/Fuji/Source/Fuji.sdk
+CFLAGS_FUJI = \
+	--target=armv8m.main-unknown-none-eabihf \
+	-mfloat-abi=hard \
+	--sysroot $(FUJI_SDKROOT) \
+	-Xclang -internal-isystem -Xclang $(FUJI_SDKROOT)/usr/local/include \
+	-Xclang -internal-externc-isystem -Xclang $(FUJI_SDKROOT)/usr/include \
+	-fPIC \
+	-fvisibility=hidden
+LDFLAGS_FUJI = \
+	--sysroot $(FUJI_SDKROOT) \
+	-L $(FUJI_SDKROOT)/usr/local/lib \
+	-L $(FUJI_SDKROOT)/usr/lib \
+	-L $(FUJI_SDKROOT)/lib/arm-unknown-none-eabihf \
+	-lclang_rt.builtins \
+	-lclang_rt.atomic
+
+CFLAGS = $(CFLAGS_FUJI) $(CFLAGS_DEBUG_$(DEBUG)) -ISources
+LDFLAGS = $(LDFLAGS_FUJI) --relocatable
 
 
 OBJECTS = \
@@ -32,7 +47,7 @@ PRIVATE_HEADERS = \
 	source/FSGlue.h
 
 
-all: FujiFS.o
+all:	FujiFS.o
 
 
 clean:
@@ -48,10 +63,10 @@ FujiFS.o: $(OBJECTS)
 
 
 install: FujiFS.o
-	mkdir -p $(DSTROOT)$(FUJI_SDKROOT)/usr/local/include
-	cp $(PRIVATE_HEADERS) $(DSTROOT)$(FUJI_SDKROOT)/usr/local/include
-	mkdir -p $(DSTROOT)$(FUJI_SDKROOT)/usr/local/lib
-	cp FujiFS.o $(DSTROOT)$(FUJI_SDKROOT)/usr/local/lib
+	mkdir -p $(DSTROOT)/usr/local/include
+	cp $(PRIVATE_HEADERS) $(DSTROOT)/usr/local/include
+	mkdir -p $(DSTROOT)/usr/local/lib
+	cp FujiFS.o $(DSTROOT)/usr/local/lib
 
 
 # Individual file dependencies.
