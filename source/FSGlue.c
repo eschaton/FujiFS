@@ -10,6 +10,7 @@
 
 #include <Errors.h>
 
+#include <stdatomic.h>
 #include <string.h>
 
 #include "ff.h"
@@ -66,26 +67,53 @@ DRESULT disk_ioctl (BYTE pdrv, BYTE cmd, void* buff)
 
 /* MARK: - Multiprocessing Glue */
 
+int Mutexes[FF_VOLUMES];
+atomic_flag MutexesLock;
+
 int ff_mutex_create (int vol)
 {
-#warning Implement ff_mutex_create
-	return -1;
+    atomic_flag_test_and_set(&MutexesLock);
+    Mutexes[vol] = 0;
+    atomic_flag_clear(&MutexesLock);
+
+	return vol;
 }
 
 void ff_mutex_delete (int vol)
 {
-#warning Implement ff_mutex_delete
+    atomic_flag_test_and_set(&MutexesLock);
+    Mutexes[vol] = 0;
+    atomic_flag_clear(&MutexesLock);
 }
 
 int ff_mutex_take (int vol)
 {
-#warning Implement ff_mutex_take
-	return -1;
+    int mutex;
+    do {
+        atomic_flag_test_and_set(&MutexesLock);
+        mutex = Mutexes[vol];
+        if (mutex == 0) {
+            Mutexes[vol] = 1;
+            mutex = 1;
+        }
+        atomic_flag_clear(&MutexesLock);
+    } while (mutex == 0);
+
+	return vol;
 }
 
 void ff_mutex_give (int vol)
 {
-#warning Implement ff_mutex_give
+    int mutex;
+    do {
+        atomic_flag_test_and_set(&MutexesLock);
+        mutex = Mutexes[vol];
+        if (mutex != 0) {
+            Mutexes[vol] = 0;
+            mutex = 0;
+        }
+        atomic_flag_clear(&MutexesLock);
+    } while (mutex != 0);
 }
 
 
