@@ -19,7 +19,7 @@
 
 /* MARK: Initialization */
 
-void FSInit(void)
+void _FSInit(void)
 {
 	// TODO: See if there's any initialization we can do for performance.
 }
