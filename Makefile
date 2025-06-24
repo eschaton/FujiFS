@@ -6,9 +6,20 @@
 #	Based on FatFs, See file LICENSE.txt for details.
 #
 
+# Project, Source & Build Identification
+FUJI_PROJECT ?= FujiFS
+FUJI_PROJECT_SOURCEVERSION ?= 1
+FUJI_PROJECT_BUILDVERSION ?= 1
+
 # Use Fuji toolchain.
 CC = fuji-tool.sh clang
 LD = fuji-tool.sh ld.lld
+
+FUJI_PROJECT_ID = $(FUJI_PROJECT)-$(FUJI_PROJECT_SOURCEVERSION)\~$(FUJI_PROJECT_BUILDVERSION)
+FUJI_BUILDRECORD_DIR ?= /tmp/FujiBuildRecords/$(FUJI_PROJECT_ID).build
+FUJI_DSTROOT ?= $(FUJI_BUILDRECORD_DIR)/dst
+FUJI_SCTROOT ?= $(FUJI_BUILDRECORD_DIR)/sdk
+DEBUG ?= 0
 
 # Enable make DEBUG=1 to build for debugging.
 CFLAGS_DEBUG_0 = -Os -DNDEBUG=1
@@ -51,22 +62,19 @@ all:	FujiFS.o
 
 
 clean:
-	rm -f $(OBJECTS) FujiFS.o
-
-
-count:
-	wc -l source/*.[ch] Makefile
+	rm -f $(OBJECTS) \
+	      FujiFS.o
 
 
 FujiFS.o: $(OBJECTS)
 	$(LD) $(LDFLAGS) -o $@ $(OBJECTS)
 
 
-install: FujiFS.o
-	mkdir -p $(DSTROOT)/usr/local/include
-	cp $(PRIVATE_HEADERS) $(DSTROOT)/usr/local/include
-	mkdir -p $(DSTROOT)/usr/local/lib
-	cp FujiFS.o $(DSTROOT)/usr/local/lib
+installapi: $(PUBLIC_HEADERS) $(PRIVATE_HEADERS) FujiFS.o
+	mkdir -p $(FUJI_SCTROOT)/usr/local/include
+	cp $(PRIVATE_HEADERS) $(FUJI_SCTROOT)/usr/local/include
+	mkdir -p $(FUJI_SCTROOT)/usr/local/lib
+	cp FujiFS.o $(FUJI_SCTROOT)/usr/local/lib
 
 
 # Individual file dependencies.
